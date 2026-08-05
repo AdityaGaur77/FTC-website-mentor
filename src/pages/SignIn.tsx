@@ -36,7 +36,8 @@ function GoogleMark() {
 }
 
 export default function SignIn() {
-  const { signIn, signUp, signInWithGoogle, resetPassword, configured } = useAuth()
+  const { signIn, signUp, signInWithGoogle, signInWithMagicLink, resetPassword, configured } =
+    useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -105,6 +106,20 @@ export default function SignIn() {
       setError(oauthError)
       setBusy(false)
     }
+  }
+
+  async function handleMagicLink() {
+    if (!email) {
+      setError('Enter your email address first, then choose “Email me a sign-in link”.')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+    const { error: otpError } = await signInWithMagicLink(email, from)
+    setBusy(false)
+    if (otpError) setError(otpError)
+    else setNotice(`Sign-in link sent to ${email}. Open it on this device to finish.`)
   }
 
   async function handleForgotPassword() {
@@ -273,16 +288,27 @@ export default function SignIn() {
           </Button>
         </form>
 
-        {!isSignUp && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+          {/* Passwordless — no external console needed, works with email alone. */}
           <button
             type="button"
-            onClick={handleForgotPassword}
+            onClick={handleMagicLink}
             disabled={busy}
-            className="mt-4 text-[12.5px] font-medium text-body transition-colors hover:text-accent disabled:opacity-50"
+            className="text-[12.5px] font-medium text-body transition-colors hover:text-accent disabled:opacity-50"
           >
-            Forgot password?
+            Email me a sign-in link
           </button>
-        )}
+          {!isSignUp && (
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={busy}
+              className="text-[12.5px] font-medium text-body transition-colors hover:text-accent disabled:opacity-50"
+            >
+              Forgot password?
+            </button>
+          )}
+        </div>
 
         <p className="mt-5 border-t border-line-soft pt-4 text-[12.5px] text-body">
           {isSignUp ? 'Already have an account? ' : 'New here? '}

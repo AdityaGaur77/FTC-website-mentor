@@ -32,6 +32,7 @@ type AuthValue = {
   signIn: (email: string, password: string) => Promise<Result>
   signUp: (args: SignUpArgs) => Promise<Result & { needsEmailConfirmation: boolean }>
   signInWithGoogle: (redirectTo?: string) => Promise<Result>
+  signInWithMagicLink: (email: string, redirectTo?: string) => Promise<Result>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<Result>
 }
@@ -128,6 +129,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null }
   }, [])
 
+  /**
+   * Passwordless: emails a one-click sign-in link. Needs no external console,
+   * and doubles as signup — shouldCreateUser makes an account on first use.
+   *
+   * Heads up: Supabase's built-in mail server is rate limited to a handful of
+   * messages per hour and is meant for testing. Configure custom SMTP under
+   * Project Settings -> Authentication before real teams rely on this.
+   */
+  const signInWithMagicLink = useCallback(
+    async (email: string, redirectTo = '/dashboard'): Promise<Result> => {
+      if (!supabase) return { error: NOT_CONFIGURED }
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}${redirectTo}`,
+          shouldCreateUser: true,
+        },
+      })
+      return { error: error?.message ?? null }
+    },
+    [],
+  )
+
   const signOut = useCallback(async () => {
     await supabase?.auth.signOut()
     setSession(null)
@@ -152,10 +176,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
+      signInWithMagicLink,
       signOut,
       resetPassword,
     }),
-    [session, profile, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword],
+    [
+      session,
+      profile,
+      loading,
+      signIn,
+      signUp,
+      signInWithGoogle,
+      signInWithMagicLink,
+      signOut,
+      resetPassword,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

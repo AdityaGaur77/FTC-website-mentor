@@ -72,10 +72,31 @@ developing, and add your deployed URL to **Redirect URLs** when you ship.
 Open `/signin`, choose **Create Account**, and sign up. Then check **Table Editor → profiles** —
 your row should be there, created by the trigger.
 
+## Sign-in methods
+
+Three are wired up on `/signin`:
+
+| Method | External setup | Notes |
+| --- | --- | --- |
+| Email + password | none | Works out of the box |
+| **Magic link** | none | Passwordless; also creates the account on first use |
+| Google | Google Cloud Console (free) | Gives you real profile photos |
+
+**Email delivery caveat.** Magic links and confirmation emails go through Supabase's built-in mail
+server, which is rate limited to a few messages per hour and is explicitly for testing. Before real
+teams sign up, add custom SMTP under **Project Settings → Authentication → SMTP Settings**
+(Resend and SendGrid both have free tiers). This limit applies to email confirmation too, not just
+magic links.
+
 ## Adding Google sign-in
 
 The code is already written — `Continue with Google` is on the login page and calls
 `signInWithGoogle()`. It stays inert until you complete the two consoles below.
+
+**Google Cloud Console is free for this.** Creating a project, the OAuth consent screen, and OAuth
+client credentials costs nothing, and there is no Supabase-only shortcut — the provider page has
+required Client ID and Client Secret fields that only Google can issue. If you get pushed toward a
+billing account or a "free trial" card prompt, skip it; OAuth credentials don't require billing.
 
 ### 1. Google Cloud Console
 
