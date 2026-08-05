@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
-import { ButtonLink, cx } from './ui'
+import { displayName, useAuth } from '../lib/auth'
+import { Avatar, Button, ButtonLink, cx } from './ui'
 
 const LINKS = [
   { to: '/', label: 'Home' },
@@ -25,9 +26,44 @@ function Wordmark() {
   )
 }
 
+/** Signed-in identity + sign out, replacing the Join / Sign In pair. */
+function AccountMenu() {
+  const { user, profile, signOut } = useAuth()
+  const navigate = useNavigate()
+  if (!user) return null
+
+  const name = displayName(user, profile)
+
+  return (
+    <div className="flex items-center gap-2">
+      <Link
+        to="/dashboard"
+        className="flex items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-raised"
+        title={user.email ?? undefined}
+      >
+        <Avatar name={name} size={24} />
+        <span className="hidden max-w-[14ch] truncate text-[13px] font-medium text-white sm:block">
+          {name}
+        </span>
+      </Link>
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={async () => {
+          await signOut()
+          navigate('/')
+        }}
+      >
+        Sign Out
+      </Button>
+    </div>
+  )
+}
+
 export default function Nav() {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
+  const { user } = useAuth()
 
   // Close the mobile sheet on navigation.
   useEffect(() => setOpen(false), [pathname])
@@ -56,12 +92,18 @@ export default function Nav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <ButtonLink to="/join" size="sm" className="hidden sm:inline-flex">
-            Join as a Peer / Mentor
-          </ButtonLink>
-          <ButtonLink to="/signin" size="sm" variant="secondary">
-            Sign In
-          </ButtonLink>
+          {user ? (
+            <AccountMenu />
+          ) : (
+            <>
+              <ButtonLink to="/join" size="sm" className="hidden sm:inline-flex">
+                Join as a Peer / Mentor
+              </ButtonLink>
+              <ButtonLink to="/signin" size="sm" variant="secondary">
+                Sign In
+              </ButtonLink>
+            </>
+          )}
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
@@ -97,9 +139,11 @@ export default function Nav() {
                 {link.label}
               </NavLink>
             ))}
-            <ButtonLink to="/join" size="md" className="my-2 sm:hidden">
-              Join as a Peer / Mentor
-            </ButtonLink>
+            {!user && (
+              <ButtonLink to="/join" size="md" className="my-2 sm:hidden">
+                Join as a Peer / Mentor
+              </ButtonLink>
+            )}
           </div>
         </nav>
       )}

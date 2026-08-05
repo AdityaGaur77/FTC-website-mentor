@@ -5,3 +5,9 @@ dist-ssr
 .DS_Store
 *.log
 .vite
+*.tsbuildinfo
+
+# Secrets — never commit real keys. Copy .env.example to .env.local instead.
+.env
+.env.local
+.env.*.local

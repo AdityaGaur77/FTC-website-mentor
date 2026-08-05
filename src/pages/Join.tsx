@@ -1,5 +1,7 @@
-import { useState, type FormEvent } from 'react'
-import { GraduationCap, Users } from 'lucide-react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { AlertCircle, GraduationCap, Users } from 'lucide-react'
+import { useAuth } from '../lib/auth'
+import { supabase } from '../lib/supabase'
 import { Button, Card, Chip, Eyebrow, Field, Panel, inputClass } from '../components/ui'
 
 const ROLES = [
@@ -20,14 +22,54 @@ const ROLES = [
 const SKILLS = ['Java', 'Onshape', 'ControlHub', 'Portfolio', 'FTCLib', 'Outreach', 'Electronics']
 
 export default function Join() {
+  const { user, profile, configured } = useAuth()
+
   const [role, setRole] = useState('student')
   const [skills, setSkills] = useState<string[]>(['Java'])
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [experience, setExperience] = useState('')
+
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
+
+  // Prefill from the signed-in account so nobody retypes what we already know.
+  useEffect(() => {
+    if (user?.email) setEmail((current) => current || user.email!)
+    if (profile?.full_name) setFullName((current) => current || profile.full_name!)
+  }, [user?.email, profile?.full_name])
 
   function toggleSkill(skill: string) {
     setSkills((current) =>
       current.includes(skill) ? current.filter((item) => item !== skill) : [...current, skill],
     )
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setBusy(true)
+    setError(null)
+
+    // Demo mode (no Supabase yet): accept the form so the flow is reviewable.
+    if (!supabase || !user) {
+      setBusy(false)
+      setSent(true)
+      return
+    }
+
+    const { error: insertError } = await supabase.from('mentor_applications').insert({
+      user_id: user.id,
+      role,
+      full_name: fullName,
+      email,
+      experience,
+      skills,
+    })
+
+    setBusy(false)
+    if (insertError) setError(insertError.message)
+    else setSent(true)
   }
 
   return (
@@ -47,7 +89,13 @@ export default function Join() {
         {ROLES.map((option) => {
           const isActive = role === option.id
           return (
-            <button key={option.id} type="button" onClick={() => setRole(option.id)} className="text-left">
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setRole(option.id)}
+              aria-pressed={isActive}
+              className="text-left"
+            >
               <Card
                 className={
                   isActive
@@ -74,24 +122,37 @@ export default function Join() {
               We’ll review your experience and reach out by email. Verified profiles usually appear
               in the directory within a few days.
             </p>
+            {!configured && (
+              <p className="mt-4 text-[12px] text-faint">
+                Demo mode — nothing was saved. Connect Supabase to store applications.
+              </p>
+            )}
           </div>
         ) : (
-          <form
-            className="max-w-2xl space-y-4"
-            onSubmit={(event: FormEvent<HTMLFormElement>) => {
-              event.preventDefault()
-              // Wire this to your backend when one exists.
-              setSent(true)
-            }}
-          >
+          <form className="max-w-2xl space-y-4" onSubmit={handleSubmit}>
             <h2 className="text-[16px] font-bold text-white">Your details</h2>
 
             <Field label="Full name">
-              <input required placeholder="Jordan Kim" className={inputClass} />
+              <input
+                required
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder="Jordan Kim"
+                autoComplete="name"
+                className={inputClass}
+              />
             </Field>
 
             <Field label="Email">
-              <input required type="email" placeholder="you@example.com" className={inputClass} />
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                className={inputClass}
+              />
             </Field>
 
             <Field
@@ -101,6 +162,8 @@ export default function Join() {
               <textarea
                 required
                 rows={4}
+                value={experience}
+                onChange={(event) => setExperience(event.target.value)}
                 placeholder="4 seasons with Team 16461, now studying mechanical engineering..."
                 className={`${inputClass} resize-y`}
               />
@@ -123,12 +186,24 @@ export default function Join() {
               </div>
             </div>
 
+            {error && (
+              <p
+                role="alert"
+                className="flex items-start gap-2 rounded-lg border border-[#5c2a2a] bg-[#1d1013] px-3.5 py-3 text-[12.5px] leading-relaxed text-[#f4a9a9]"
+              >
+                <AlertCircle size={15} className="mt-px shrink-0" />
+                <span>{error}</span>
+              </p>
+            )}
+
             <p className="text-[12px] leading-relaxed text-faint">
               By applying you agree to the Youth Protection Policy: no one-on-one virtual sessions
               between a mentor and a single student.
             </p>
 
-            <Button type="submit">Submit application</Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? 'Submitting…' : 'Submit application'}
+            </Button>
           </form>
         )}
       </Card>
