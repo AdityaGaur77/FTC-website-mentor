@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --ink: #070d14;
+    --panel: #0b1421;
+    --card: #0d1826;
+    --line: #1b2c40;
+    --accent: #22d3ee;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-ink font-sans text-[15px] text-white antialiased;
+    /* Faint navy vignette so the page never reads as flat black */
+    background-image:
+      radial-gradient(80% 50% at 50% 0%, rgba(34, 211, 238, 0.05) 0%, transparent 60%),
+      radial-gradient(100% 60% at 50% 100%, rgba(23, 51, 84, 0.35) 0%, transparent 70%);
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-[-0.02em];
+  }
+
+  ::selection {
+    @apply bg-accent/30 text-white;
+  }
+
+  /* Consistent focus ring for keyboard users on every interactive element */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-ink;
+  }
+}
+
+@layer components {
+  /* A large bordered section container — the recurring shell in the design */
+  .panel {
+    @apply rounded-panel border border-line-soft bg-panel;
+  }
+
+  /* A card that sits inside a panel or directly on the page */
+  .card {
+    @apply rounded-xl border border-line bg-card;
+  }
+
+  .card-hover {
+    @apply transition-colors duration-200 hover:border-accent/40 hover:bg-raised/60;
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.14em] text-accent;
+  }
+
+  .muted {
+    @apply text-body;
+  }
+}
+
+@layer utilities {
+  .container-page {
+    @apply mx-auto w-full max-w-[1120px] px-4 sm:px-6;
+  }
+}
