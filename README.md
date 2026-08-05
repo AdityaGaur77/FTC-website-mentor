@@ -72,6 +72,49 @@ developing, and add your deployed URL to **Redirect URLs** when you ship.
 Open `/signin`, choose **Create Account**, and sign up. Then check **Table Editor → profiles** —
 your row should be there, created by the trigger.
 
+## Adding Google sign-in
+
+The code is already written — `Continue with Google` is on the login page and calls
+`signInWithGoogle()`. It stays inert until you complete the two consoles below.
+
+### 1. Google Cloud Console
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → create a project.
+2. **APIs & Services → OAuth consent screen**. Choose **External**, fill in app name, user support
+   email, and developer email. The default `email` / `profile` / `openid` scopes are all you need.
+3. **APIs & Services → Credentials → Create Credentials → OAuth client ID → Web application**.
+4. **Authorized JavaScript origins**: `http://localhost:5173` (add your production URL later).
+5. **Authorized redirect URIs** — this one must be exact, and it points at Supabase, not your app:
+
+   ```
+   https://<your-project-ref>.supabase.co/auth/v1/callback
+   ```
+
+6. Copy the **Client ID** and **Client secret**.
+
+### 2. Supabase
+
+1. **Authentication → Sign In / Providers → Google** → enable it.
+2. Paste the Client ID and Client secret, then **Save**.
+3. **Authentication → URL Configuration**: Site URL `http://localhost:5173`, and add
+   `http://localhost:5173/**` to Redirect URLs.
+
+### 3. Re-run the schema
+
+`supabase/schema.sql` gained an `avatar_url` column and a trigger that reads Google's metadata
+keys. Paste the whole file into the SQL Editor again — every statement is guarded, so re-running is
+safe.
+
+### Gotchas
+
+- While the consent screen is in **Testing**, only accounts listed under **Audience → Test users**
+  can sign in. Everyone else gets "access blocked". Publish the app when you're ready for real
+  teams.
+- `redirect_uri_mismatch` means the URI in step 5 doesn't match character for character — check for
+  a trailing slash or `http` vs `https`.
+- Google accounts get `account_type = 'team'` by default, since Google can't tell us whether
+  someone is a mentor. Add a settings screen later to let them switch.
+
 ### What's protected
 
 `/dashboard`, `/messages`, and `/join` require an account and redirect to `/signin`, which returns

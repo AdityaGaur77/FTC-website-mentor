@@ -13,10 +13,14 @@
 create table if not exists public.profiles (
   id           uuid primary key references auth.users on delete cascade,
   full_name    text,
+  avatar_url   text,
   account_type text not null default 'team' check (account_type in ('team', 'mentor')),
   team_number  text,
   created_at   timestamptz not null default now()
 );
+
+-- Added after the first version of this file; safe if you already ran it.
+alter table public.profiles add column if not exists avatar_url text;
 
 alter table public.profiles enable row level security;
 
@@ -44,7 +48,13 @@ create policy "users update their own profile"
 
 -- -----------------------------------------------------------------------------
 -- Create the profile row whenever someone signs up.
--- full_name / account_type arrive from the `options.data` passed to signUp().
+--
+-- The metadata keys differ by sign-up method, so each one is coalesced:
+--   email signup -> full_name, account_type   (from options.data in signUp())
+--   Google       -> full_name or name, avatar_url or picture, no account_type
+-- Google users therefore default to 'team'; let them change it in a settings
+-- screen later rather than guessing here.
+--
 -- security definer lets the trigger write past RLS; the empty search_path is
 -- the hardening Supabase recommends, so every name below is fully qualified.
 -- -----------------------------------------------------------------------------
@@ -55,10 +65,17 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.profiles (id, full_name, account_type)
+  insert into public.profiles (id, full_name, avatar_url, account_type)
   values (
     new.id,
-    new.raw_user_meta_data ->> 'full_name',
+    coalesce(
+      new.raw_user_meta_data ->> 'full_name',
+      new.raw_user_meta_data ->> 'name'
+    ),
+    coalesce(
+      new.raw_user_meta_data ->> 'avatar_url',
+      new.raw_user_meta_data ->> 'picture'
+    ),
     coalesce(new.raw_user_meta_data ->> 'account_type', 'team')
   )
   on conflict (id) do nothing;

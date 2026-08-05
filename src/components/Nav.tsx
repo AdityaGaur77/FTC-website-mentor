@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
-import { displayName, useAuth } from '../lib/auth'
+import { avatarUrl, displayName, useAuth } from '../lib/auth'
 import { Avatar, Button, ButtonLink, cx } from './ui'
 
 const LINKS = [
@@ -41,7 +41,7 @@ function AccountMenu() {
         className="flex items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-raised"
         title={user.email ?? undefined}
       >
-        <Avatar name={name} size={24} />
+        <Avatar name={name} src={avatarUrl(user, profile)} size={24} />
         <span className="hidden max-w-[14ch] truncate text-[13px] font-medium text-white sm:block">
           {name}
         </span>

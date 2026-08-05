@@ -24,6 +24,8 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
 export type Profile = {
   id: string
   full_name: string | null
+  /** Google supplies a real photo here; null for email signups. */
+  avatar_url: string | null
   account_type: 'team' | 'mentor'
   team_number: string | null
   created_at: string

@@ -31,6 +31,7 @@ type AuthValue = {
   configured: boolean
   signIn: (email: string, password: string) => Promise<Result>
   signUp: (args: SignUpArgs) => Promise<Result & { needsEmailConfirmation: boolean }>
+  signInWithGoogle: (redirectTo?: string) => Promise<Result>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<Result>
 }
@@ -110,6 +111,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null, needsEmailConfirmation: Boolean(data.user) && !data.session }
   }, [])
 
+  /**
+   * Hands off to Google and comes back to `redirectTo`. The session is read
+   * out of the callback URL by detectSessionInUrl in supabase.ts, so there is
+   * nothing to await here — the browser navigates away.
+   */
+  const signInWithGoogle = useCallback(async (redirectTo = '/dashboard'): Promise<Result> => {
+    if (!supabase) return { error: NOT_CONFIGURED }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}${redirectTo}`,
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      },
+    })
+    return { error: error?.message ?? null }
+  }, [])
+
   const signOut = useCallback(async () => {
     await supabase?.auth.signOut()
     setSession(null)
@@ -133,10 +151,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       configured: isSupabaseConfigured,
       signIn,
       signUp,
+      signInWithGoogle,
       signOut,
       resetPassword,
     }),
-    [session, profile, loading, signIn, signUp, signOut, resetPassword],
+    [session, profile, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -153,7 +172,22 @@ export function displayName(user: User | null, profile: Profile | null) {
   return (
     profile?.full_name ||
     (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
     user?.email?.split('@')[0] ||
     'Account'
+  )
+}
+
+/**
+ * Google photo if we have one. Reads user_metadata as well as the profile row,
+ * so the picture shows on the very first paint after an OAuth redirect —
+ * before the profiles query has come back.
+ */
+export function avatarUrl(user: User | null, profile: Profile | null) {
+  return (
+    profile?.avatar_url ||
+    (user?.user_metadata?.avatar_url as string | undefined) ||
+    (user?.user_metadata?.picture as string | undefined) ||
+    undefined
   )
 }
