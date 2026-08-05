@@ -92,21 +92,47 @@ If ten teams sign up in one evening, most of them get nothing. Turning on custom
 
 **Project Settings → Authentication → SMTP Settings → Enable custom SMTP.**
 
-With SendGrid (no domain needed — verify a single address):
+### Free and no domain: Gmail SMTP
+
+Every transactional provider with a free tier (Brevo, Resend, Mailtrap) needs a domain you own to
+authenticate your sender — and since 2024 Gmail and Yahoo reject unauthenticated mail, so "verify a
+Gmail address as the sender" doesn't actually work through those services. SendGrid's free plan was
+retired in May 2025.
+
+Gmail's own SMTP sidesteps that: Google signs mail sent from a Gmail address through its own
+servers, so it's properly authenticated. Free, no domain, ~500 emails/day.
+
+1. Use a **dedicated account** like `relayforftc@gmail.com`, not your personal address — it becomes
+   the visible sender and holds an app password.
+2. Turn on **2-Step Verification** on that account (Google won't issue app passwords without it).
+3. **Google Account → Security → App passwords** → create one named `Supabase SMTP`. Copy the
+   16-character code.
+4. Fill in Supabase:
 
 | Field | Value |
 | --- | --- |
-| Host | `smtp.sendgrid.net` |
-| Port | `587` |
-| Username | `apikey` — the literal word |
-| Password | your SendGrid API key |
-| Sender email | the address you verified under Single Sender Verification |
+| Sender email address | the Gmail address — **must match the username below** |
+| Sender name | `Relay for FTC` |
+| Host | `smtp.gmail.com` |
+| Port number | `587` |
+| Minimum interval per user | `60` |
+| Username | the same Gmail address |
+| Password | the 16-character app password (not your Gmail password) |
 
-With Resend (needs a domain you own): host `smtp.resend.com`, port `465`, username `resend`,
-password = your Resend API key.
+Gmail rewrites the From header to the authenticated account, so a sender that differs from the
+username will silently fail.
 
-Also set **Authentication → URL Configuration → Site URL** to `http://localhost:5173`, or magic
-links will bounce to Supabase's default port and fail.
+### When you launch for real
+
+Move to **Resend** — 3,000 emails/month free forever and the best Supabase integration — once you
+own a domain (~$10/year). Better deliverability, and it stops tying the app to a personal Google
+account.
+
+### Also required
+
+Set **Authentication → URL Configuration → Site URL** to `http://localhost:5173` and add
+`http://localhost:5173/**` to Redirect URLs, or magic links bounce to Supabase's default port and
+fail.
 
 ## Adding Google later
 
