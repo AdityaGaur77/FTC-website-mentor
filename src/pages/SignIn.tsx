@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { AlertCircle, MailCheck } from 'lucide-react'
+import { AlertCircle, Mail, MailCheck } from 'lucide-react'
 import { useAuth, type AccountType } from '../lib/auth'
 import { Button, Card, Chip, Eyebrow, Field, Panel, inputClass } from '../components/ui'
 
@@ -11,33 +11,9 @@ const ACCOUNT_TYPES: { id: AccountType; label: string }[] = [
   { id: 'mentor', label: 'Peer / Mentor' },
 ]
 
-/** Google's four-colour mark. Their brand terms require the official logo. */
-function GoogleMark() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        fill="#4285F4"
-        d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"
-      />
-      <path
-        fill="#34A853"
-        d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"
-      />
-      <path
-        fill="#EA4335"
-        d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"
-      />
-    </svg>
-  )
-}
 
 export default function SignIn() {
-  const { signIn, signUp, signInWithGoogle, signInWithMagicLink, resetPassword, configured } =
-    useAuth()
+  const { signIn, signUp, signInWithMagicLink, resetPassword, configured } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -95,17 +71,6 @@ export default function SignIn() {
       return
     }
     navigate(from, { replace: true })
-  }
-
-  async function handleGoogle() {
-    setBusy(true)
-    setError(null)
-    // On success the browser leaves for Google, so `busy` never resets here.
-    const { error: oauthError } = await signInWithGoogle(from)
-    if (oauthError) {
-      setError(oauthError)
-      setBusy(false)
-    }
   }
 
   async function handleMagicLink() {
@@ -191,24 +156,7 @@ export default function SignIn() {
           </Chip>
         </div>
 
-        {/* Google first — it's the fastest path and needs no password. */}
-        <Button
-          variant="secondary"
-          className="mt-5 w-full"
-          onClick={handleGoogle}
-          disabled={busy}
-        >
-          <GoogleMark />
-          Continue with Google
-        </Button>
-
-        <div className="my-5 flex items-center gap-3" aria-hidden="true">
-          <span className="h-px flex-1 bg-line-soft" />
-          <span className="text-[11px] font-medium uppercase tracking-[0.1em] text-faint">or</span>
-          <span className="h-px flex-1 bg-line-soft" />
-        </div>
-
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
           {isSignUp && (
             <>
               <Field label="Full name">
@@ -288,17 +236,23 @@ export default function SignIn() {
           </Button>
         </form>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-          {/* Passwordless — no external console needed, works with email alone. */}
-          <button
-            type="button"
-            onClick={handleMagicLink}
-            disabled={busy}
-            className="text-[12.5px] font-medium text-body transition-colors hover:text-accent disabled:opacity-50"
-          >
-            Email me a sign-in link
-          </button>
-          {!isSignUp && (
+        <div className="my-5 flex items-center gap-3" aria-hidden="true">
+          <span className="h-px flex-1 bg-line-soft" />
+          <span className="text-[11px] font-medium uppercase tracking-[0.1em] text-faint">or</span>
+          <span className="h-px flex-1 bg-line-soft" />
+        </div>
+
+        {/* Passwordless. Uses the email already typed above, so it sits below. */}
+        <Button variant="secondary" className="w-full" onClick={handleMagicLink} disabled={busy}>
+          <Mail size={14} />
+          Email me a sign-in link
+        </Button>
+        <p className="mt-2 text-center text-[11.5px] leading-relaxed text-faint">
+          No password needed — we’ll send a one-click link to your inbox.
+        </p>
+
+        {!isSignUp && (
+          <div className="mt-4 text-center">
             <button
               type="button"
               onClick={handleForgotPassword}
@@ -307,8 +261,8 @@ export default function SignIn() {
             >
               Forgot password?
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <p className="mt-5 border-t border-line-soft pt-4 text-[12.5px] text-body">
           {isSignUp ? 'Already have an account? ' : 'New here? '}

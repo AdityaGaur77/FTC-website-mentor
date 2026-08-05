@@ -74,29 +74,50 @@ your row should be there, created by the trigger.
 
 ## Sign-in methods
 
-Three are wired up on `/signin`:
+Two are live on `/signin`:
 
 | Method | External setup | Notes |
 | --- | --- | --- |
-| Email + password | none | Works out of the box |
+| Email + password | none | Standard signup with email confirmation |
 | **Magic link** | none | Passwordless; also creates the account on first use |
-| Google | Google Cloud Console (free) | Gives you real profile photos |
 
-**Email delivery caveat.** Magic links and confirmation emails go through Supabase's built-in mail
-server, which is rate limited to a few messages per hour and is explicitly for testing. Before real
-teams sign up, add custom SMTP under **Project Settings → Authentication → SMTP Settings**
-(Resend and SendGrid both have free tiers). This limit applies to email confirmation too, not just
-magic links.
+Google sign-in was deliberately left out — see [Adding Google later](#adding-google-later).
 
-## Adding Google sign-in
+## Email delivery — do this before launch
 
-The code is already written — `Continue with Google` is on the login page and calls
-`signInWithGoogle()`. It stays inert until you complete the two consoles below.
+Magic links, confirmation emails, and password resets all go through Supabase's built-in mail
+server, which is **rate limited to a handful of messages per hour** and is explicitly for testing.
+If ten teams sign up in one evening, most of them get nothing. Turning on custom SMTP raises it to
+**30 emails/hour**, adjustable after that.
 
-**Google Cloud Console is free for this.** Creating a project, the OAuth consent screen, and OAuth
-client credentials costs nothing, and there is no Supabase-only shortcut — the provider page has
-required Client ID and Client Secret fields that only Google can issue. If you get pushed toward a
-billing account or a "free trial" card prompt, skip it; OAuth credentials don't require billing.
+**Project Settings → Authentication → SMTP Settings → Enable custom SMTP.**
+
+With SendGrid (no domain needed — verify a single address):
+
+| Field | Value |
+| --- | --- |
+| Host | `smtp.sendgrid.net` |
+| Port | `587` |
+| Username | `apikey` — the literal word |
+| Password | your SendGrid API key |
+| Sender email | the address you verified under Single Sender Verification |
+
+With Resend (needs a domain you own): host `smtp.resend.com`, port `465`, username `resend`,
+password = your Resend API key.
+
+Also set **Authentication → URL Configuration → Site URL** to `http://localhost:5173`, or magic
+links will bounce to Supabase's default port and fail.
+
+## Adding Google later
+
+The client-side work is already done and kept in `src/lib/auth.tsx` as `signInWithGoogle()`. To
+turn it on: render a button that calls it, then enable the Google provider in Supabase and paste in
+a Client ID and Client Secret.
+
+Those two values can only come from Google Cloud Console — Supabase has no built-in Google app to
+borrow, and its provider page requires both fields. **This is free**: creating a project, the OAuth
+consent screen, and OAuth client credentials costs nothing. If the console pushes a billing account
+or "free trial" card prompt at you, skip it — OAuth credentials don't require billing.
 
 ### 1. Google Cloud Console
 
@@ -122,9 +143,12 @@ billing account or a "free trial" card prompt, skip it; OAuth credentials don't 
 
 ### 3. Re-run the schema
 
-`supabase/schema.sql` gained an `avatar_url` column and a trigger that reads Google's metadata
-keys. Paste the whole file into the SQL Editor again — every statement is guarded, so re-running is
-safe.
+`supabase/schema.sql` gained an `avatar_url` column and a trigger that reads Google's metadata keys.
+Paste the whole file into the SQL Editor again — every statement is guarded, so re-running over an
+existing database is safe.
+
+Only needed for Google. Magic-link and password accounts work fine without it; they just fall back
+to initials avatars.
 
 ### Gotchas
 

@@ -116,6 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * Hands off to Google and comes back to `redirectTo`. The session is read
    * out of the callback URL by detectSessionInUrl in supabase.ts, so there is
    * nothing to await here — the browser navigates away.
+   *
+   * NOTE: no button calls this today — Google sign-in was dropped in favour of
+   * magic links. Kept because it's the whole client-side cost of adding Google
+   * back: render a button that calls it, enable the provider in Supabase, and
+   * paste in a Client ID + Secret from Google Cloud Console.
    */
   const signInWithGoogle = useCallback(async (redirectTo = '/dashboard'): Promise<Result> => {
     if (!supabase) return { error: NOT_CONFIGURED }
