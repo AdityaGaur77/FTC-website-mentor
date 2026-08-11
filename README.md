@@ -191,6 +191,24 @@ to initials avatars.
 `/dashboard`, `/messages`, and `/join` require an account and redirect to `/signin`, which returns
 you to the page you wanted after login. `/`, `/mentors`, `/requests`, and `/safety` stay public.
 
+## Deploying to Vercel
+
+Import the repo and Vercel detects Vite on its own. Three things it can't infer:
+
+**Environment variables.** Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Settings →
+Environment Variables for Production, Preview and Development. Vite inlines `VITE_*` at *build*
+time, so adding them does nothing to a deployment that already exists — redeploy afterwards, or
+they'll be missing and the site will run in demo mode.
+
+**`vercel.json`.** The rewrite sends every path to `index.html` because BrowserRouter owns the URL;
+without it Vercel looks for a real file at `/mentors` and 404s on refresh, on shared links, and on
+the magic-link callback. Static assets are matched before rewrites, so `/assets/*` is unaffected.
+Note that Vercel validates this file strictly — it rejects any key outside its schema, including
+comment keys, and the whole deployment fails.
+
+**Supabase redirect URLs.** Point auth at the *stable* domain (`relay-ftc.vercel.app`), not the
+per-deployment URL, which changes on every push. See below.
+
 ## Where things are
 
 ```
