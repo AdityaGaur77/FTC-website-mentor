@@ -108,6 +108,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) return { error: error.message, needsEmailConfirmation: false }
 
+    // Supabase hides whether an email is already taken, so nobody can probe the
+    // site to discover who has an account. Rather than erroring, it resolves
+    // with a decoy user whose identities array is empty — which otherwise lands
+    // on the "check your email" branch below and waits for mail that never
+    // sends. Reading the decoy trades a little of that privacy for a form that
+    // tells the truth.
+    //
+    // identities is absent, not empty, on some configurations; treat that as
+    // unknown and fall through instead of guessing.
+    const identities = data.user?.identities
+    if (data.user && Array.isArray(identities) && identities.length === 0) {
+      return {
+        error:
+          'An account with this email already exists. Use “Email me a sign-in link” below, or switch to Sign In if you set a password.',
+        needsEmailConfirmation: false,
+      }
+    }
+
     // With "Confirm email" on, signUp returns a user but no session.
     return { error: null, needsEmailConfirmation: Boolean(data.user) && !data.session }
   }, [])
