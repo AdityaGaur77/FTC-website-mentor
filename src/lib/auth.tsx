@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: {
         // Read by the handle_new_user() trigger to populate public.profiles.
         data: { full_name: fullName, account_type: accountType },
-        emailRedirectTo: `${window.location.origin}/signin`,
+        emailRedirectTo: `${window.location.origin}/confirmed`,
       },
     })
 

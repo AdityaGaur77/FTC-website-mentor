@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AlertCircle, Mail, MailCheck } from 'lucide-react'
 import { useAuth, type AccountType } from '../lib/auth'
@@ -13,7 +13,7 @@ const ACCOUNT_TYPES: { id: AccountType; label: string }[] = [
 
 
 export default function SignIn() {
-  const { signIn, signUp, signInWithMagicLink, resetPassword, configured } = useAuth()
+  const { user, signIn, signUp, signInWithMagicLink, resetPassword, configured } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -30,6 +30,19 @@ export default function SignIn() {
 
   /** Where to land after a successful sign-in. */
   const from = (location.state as { from?: string } | null)?.from ?? '/dashboard'
+
+  /**
+   * This tab is parked on "check your inbox" while the confirmation link gets
+   * opened in another one. supabase-js broadcasts the session between tabs, so
+   * a user appearing here means confirmation succeeded elsewhere — move to the
+   * homepage rather than leaving a stale form behind the user's back.
+   *
+   * Scoped to confirmSent so it can't race the explicit navigate() that a
+   * normal sign-in already does.
+   */
+  useEffect(() => {
+    if (confirmSent && user) navigate('/', { replace: true })
+  }, [confirmSent, user, navigate])
 
   function switchMode(next: Mode) {
     setMode(next)
