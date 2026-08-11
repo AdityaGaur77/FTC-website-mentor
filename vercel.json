@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "comment": "BrowserRouter owns the URL, so every path must serve index.html. Without this, loading /mentors directly or refreshing on it returns a 404 from Vercel. Static files in /assets are matched first and are unaffected.",
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
